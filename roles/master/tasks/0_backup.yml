@@ -1,0 +1,39 @@
+---
+- name: Tạo thư mục backup với timestamp
+  file:
+    path: "{{ backup_dir }}/{{ ansible_date_time.date }}_{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+    state: directory
+    mode: '0755'
+  register: backup_subdir
+
+- name: Backup kube-apiserver manifest
+  copy:
+    src: "{{ apiserver_manifest }}"
+    dest: "{{ backup_subdir.path }}/kube-apiserver.yaml.bak"
+    remote_src: yes
+  ignore_errors: yes
+
+- name: Backup kube-controller-manager manifest
+  copy:
+    src: "{{ controller_manifest }}"
+    dest: "{{ backup_subdir.path }}/kube-controller-manager.yaml.bak"
+    remote_src: yes
+  ignore_errors: yes
+
+- name: Backup kube-scheduler manifest
+  copy:
+    src: "{{ scheduler_manifest }}"
+    dest: "{{ backup_subdir.path }}/kube-scheduler.yaml.bak"
+    remote_src: yes
+  ignore_errors: yes
+
+- name: Backup etcd manifest
+  copy:
+    src: "{{ etcd_manifest }}"
+    dest: "{{ backup_subdir.path }}/etcd.yaml.bak"
+    remote_src: yes
+  ignore_errors: yes
+
+- name: Log đường dẫn backup
+  debug:
+    msg: "Backup lưu tại: {{ backup_subdir.path }}"

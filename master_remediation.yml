@@ -1,0 +1,38 @@
+---
+- name: CIS Kubernetes Benchmark – Master Node Remediation
+  hosts: masters
+  become: yes
+  vars:
+    apiserver_manifest: /etc/kubernetes/manifests/kube-apiserver.yaml
+    controller_manifest: /etc/kubernetes/manifests/kube-controller-manager.yaml
+    scheduler_manifest:  /etc/kubernetes/manifests/kube-scheduler.yaml
+    etcd_manifest:       /etc/kubernetes/manifests/etcd.yaml
+    backup_dir:          /home/ubuntu/system_manifests_backups
+    admission_dir:       /etc/kubernetes/admission
+    enc_dir:             /etc/kubernetes/enc
+    audit_log_dir:       /var/log/apiserver
+
+  tasks:
+    - name: Backup manifests trước khi remediate
+      import_tasks: roles/master/tasks/0_backup.yml
+      tags: always
+
+    - name: Section 1.2 – API Server
+      import_tasks: roles/master/tasks/1_2_api_server.yml
+      tags: [cis, api_server, "1.2"]
+
+    - name: Section 1.3 – Controller Manager
+      import_tasks: roles/master/tasks/1_3_controller_manager.yml
+      tags: [cis, controller_manager, "1.3"]
+
+    - name: Section 1.4 – Scheduler
+      import_tasks: roles/master/tasks/1_4_scheduler.yml
+      tags: [cis, scheduler, "1.4"]
+
+    - name: Section 2 – etcd
+      import_tasks: roles/master/tasks/2_etcd.yml
+      tags: [cis, etcd, "2"]
+
+    - name: Verify cluster còn hoạt động sau remediation
+      import_tasks: roles/master/tasks/verify.yml
+      tags: always

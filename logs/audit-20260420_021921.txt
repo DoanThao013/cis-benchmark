@@ -1,0 +1,65 @@
+============================================================
+ CIS Kubernetes Benchmark v1.12.0 – Sections 1.2 / 1.3 / 1.4 / 2
+ Automated Check
+============================================================
+Section 1.2 – API Server
+------------------------------------------------------------
+[✓] 1.2.1:     anonymous-auth = false => PASS
+[✓] 1.2.2:     token-auth-file not set => PASS
+[✓] 1.2.3:     DenyServiceExternalIPs enabled => PASS
+[✓] 1.2.4a:    kubelet-client-certificate set => PASS
+[✓] 1.2.4b:    kubelet-client-key set => PASS
+[✓] 1.2.5:     kubelet-certificate-authority set => PASS
+[✓] 1.2.6:     authorization-mode != AlwaysAllow => PASS
+[✓] 1.2.7:     authorization-mode includes Node => PASS
+[✓] 1.2.8:     authorization-mode includes RBAC => PASS
+[✓] 1.2.9:     EventRateLimit enabled => PASS
+[✓] 1.2.10:    AlwaysAdmit not enabled => PASS
+[✓] 1.2.11:    AlwaysPullImages enabled => PASS
+[✓] 1.2.12:    ServiceAccount not disabled => PASS
+[✓] 1.2.13:    NamespaceLifecycle not disabled => PASS
+[✓] 1.2.14:    NodeRestriction enabled => PASS
+[✓] 1.2.15:    profiling = false => PASS
+[✓] 1.2.16:    audit-log-path set => PASS
+[✓] 1.2.17:    audit-log-maxage >= 30 => PASS
+[✓] 1.2.18:    audit-log-maxbackup >= 10 => PASS
+[✓] 1.2.19:    audit-log-maxsize >= 100 => PASS
+[✓] 1.2.20:    request-timeout acceptable (default 60s) => PASS
+[✓] 1.2.21:    service-account-lookup = true (default) => PASS
+[✓] 1.2.22:    service-account-key-file set => PASS
+[✓] 1.2.23a:   etcd-certfile set => PASS
+[✓] 1.2.23b:   etcd-keyfile set => PASS
+[✓] 1.2.24a:   tls-cert-file set => PASS
+[✓] 1.2.24b:   tls-private-key-file set => PASS
+[✓] 1.2.25:    client-ca-file set => PASS
+[✓] 1.2.26:    etcd-cafile set => PASS
+[✓] 1.2.27:    encryption-provider-config set => PASS
+[✓] 1.2.29:    strong TLS ciphers only => PASS
+[✓] 1.2.30:    token-expiration-extension = false => PASS
+Section 1.3 – Controller Manager
+------------------------------------------------------------
+[✓] 1.3.1:     terminated-pod-gc-threshold set => PASS
+[✓] 1.3.2:     profiling = false => PASS
+[✓] 1.3.3:     use-service-account-credentials = true => PASS
+[✓] 1.3.4:     service-account-private-key-file set => PASS
+[✓] 1.3.5:     root-ca-file set => PASS
+[✓] 1.3.6:     RotateKubeletServerCertificate = true => PASS
+[✓] 1.3.7:     bind-address = 127.0.0.1 => PASS
+Section 1.4 – Scheduler
+------------------------------------------------------------
+[✓] 1.4.1:     profiling = false => PASS
+[✓] 1.4.2:     bind-address = 127.0.0.1 => PASS
+Section 2 – etcd
+------------------------------------------------------------
+[✓] 2.1a:      cert-file set => PASS
+[✓] 2.1b:      key-file set => PASS
+[✓] 2.2:       client-cert-auth = true => PASS
+[✓] 2.3:       auto-tls not true => PASS
+[?] 2.4:       peer-cert-file (single etcd node) => MANUAL
+[?] 2.5:       peer-client-cert-auth (single etcd node) => MANUAL
+[?] 2.6:       peer-auto-tls (single etcd node) => MANUAL
+[✓] 2.7:       etcd uses separate CA => PASS
+============================================================
+Tổng: 46 | PASS: 46 | FAIL: 0 | N/A (manual): 3
+Tất cả automated checks đều PASS.
+============================================================

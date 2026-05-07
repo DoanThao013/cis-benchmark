@@ -1,0 +1,25 @@
+---
+- name: "VERIFY – Chờ apiserver sẵn sàng"
+  wait_for:
+    port: 6443
+    host: 127.0.0.1
+    delay: 15
+    timeout: 120
+    state: started
+  ignore_errors: yes
+
+- name: "VERIFY – kubectl get nodes"
+  become: no
+  command: kubectl get nodes
+  register: nodes_check
+  environment:
+    KUBECONFIG: /home/ubuntu/.kube/config
+  retries: 5
+  delay: 10
+  until: nodes_check.rc == 0
+  ignore_errors: yes
+
+- name: "VERIFY – Kết quả nodes"
+  debug:
+    msg: "{{ nodes_check.stdout_lines }}"
+  when: nodes_check is defined

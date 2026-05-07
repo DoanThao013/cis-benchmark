@@ -1,0 +1,409 @@
+---
+# ══════════════════════════════════════════════════════════════════════
+# CIS 1.2 – API Server Remediation
+# File: roles/master/tasks/1_2_api_server.yml
+# Cover: 1.2.1 – 1.2.30 (30 muc)
+# ══════════════════════════════════════════════════════════════════════
+
+
+# ── Chuẩn bị thư mục/file phụ trợ ───────────────────────────────────
+- name: "1.2 PREP – Tạo thư mục audit log"
+ file:
+   path: "{{ audit_log_dir }}"
+   state: directory
+   owner: root
+   group: root
+   mode: '0700'
+
+
+- name: "1.2 PREP – Tạo thư mục admission config"
+ file:
+   path: "{{ admission_dir }}"
+   state: directory
+   mode: '0755'
+
+
+- name: "1.2 PREP – Tạo thư mục encryption config"
+ file:
+   path: "{{ enc_dir }}"
+   state: directory
+   mode: '0700'
+
+
+- name: "1.2 PREP – Tạo EventRateLimit admission config"
+ copy:
+   dest: "{{ admission_dir }}/event-rate-limit.yaml"
+   content: |
+     apiVersion: apiserver.config.k8s.io/v1
+     kind: AdmissionConfiguration
+     plugins:
+     - name: EventRateLimit
+       configuration:
+         apiVersion: eventratelimit.admission.k8s.io/v1alpha1
+         kind: Configuration
+         limits:
+         - type: Server
+           qps: 5000
+           burst: 20000
+   mode: '0644'
+
+
+- name: "1.2 PREP – Tạo audit policy file"
+ copy:
+   dest: /etc/kubernetes/audit-policy.yaml
+   content: |
+     apiVersion: audit.k8s.io/v1
+     kind: Policy
+     rules:
+       - level: Metadata
+   mode: '0644'
+
+
+- name: "1.2 PREP – Check encryption config đã tồn tại chưa"
+ stat:
+   path: "{{ enc_dir }}/encryption-config.yaml"
+ register: enc_file
+
+
+- name: "1.2 PREP – Tạo encryption key ngẫu nhiên"
+ shell: head -c 32 /dev/urandom | base64
+ register: enc_key
+ when: not enc_file.stat.exists
+
+
+- name: "1.2 PREP – Tạo encryption config"
+ copy:
+   dest: "{{ enc_dir }}/encryption-config.yaml"
+   content: |
+     apiVersion: apiserver.config.k8s.io/v1
+     kind: EncryptionConfiguration
+     resources:
+       - resources:
+           - secrets
+         providers:
+           - aescbc:
+               keys:
+                 - name: key1
+                   secret: "{{ enc_key.stdout }}"
+           - identity: {}
+   mode: '0600'
+ when: not enc_file.stat.exists
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.1 – --anonymous-auth=false
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.1 – --anonymous-auth=false"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--anonymous-auth='
+   line: '    - --anonymous-auth=false'
+   insertafter: '^\s*- kube-apiserver'
+   backup: yes
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.2 – --token-auth-file không được đặt
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.2 – Xóa --token-auth-file nếu tồn tại"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--token-auth-file='
+   state: absent
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.3 – DenyServiceExternalIPs
+# 1.2.9 – EventRateLimit
+# 1.2.11 – AlwaysPullImages
+# 1.2.14 – NodeRestriction
+# (Gộp chung vì cùng flag --enable-admission-plugins)
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.3/9/11/14 – --enable-admission-plugins"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--enable-admission-plugins='
+   line: '    - --enable-admission-plugins=NodeRestriction,EventRateLimit,DenyServiceExternalIPs,AlwaysPullImages'
+   insertafter: '^\s*- kube-apiserver'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.4 – --kubelet-client-certificate và --kubelet-client-key
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.4 – --kubelet-client-certificate"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--kubelet-client-certificate='
+   line: '    - --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt'
+   insertafter: '^\s*- kube-apiserver'
+
+
+- name: "CIS 1.2.4 – --kubelet-client-key"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--kubelet-client-key='
+   line: '    - --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key'
+   insertafter: '^\s*- kube-apiserver'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.5 – --kubelet-certificate-authority
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.5 – --kubelet-certificate-authority"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--kubelet-certificate-authority='
+   line: '    - --kubelet-certificate-authority=/etc/kubernetes/pki/ca.crt'
+   insertafter: '^\s*- kube-apiserver'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.6/7/8 – --authorization-mode=Node,RBAC
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.6/7/8 – --authorization-mode=Node,RBAC"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--authorization-mode='
+   line: '    - --authorization-mode=Node,RBAC'
+   insertafter: '^\s*- kube-apiserver'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.9 – --admission-control-config-file (cho EventRateLimit)
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.9 – --admission-control-config-file"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--admission-control-config-file='
+   line: '    - --admission-control-config-file={{ admission_dir }}/event-rate-limit.yaml'
+   insertafter: '^\s*- kube-apiserver'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.10 – AlwaysAdmit không được bật (xóa nếu có)
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.10 – Xóa AlwaysAdmit khỏi enable-admission-plugins nếu có"
+ shell: |
+   grep -q 'AlwaysAdmit' {{ apiserver_manifest }} && \
+   sed -i 's/,AlwaysAdmit//g; s/AlwaysAdmit,//g; s/AlwaysAdmit//g' {{ apiserver_manifest }} || true
+ changed_when: false
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.12 – ServiceAccount không được bị disable
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.12 – Xóa ServiceAccount khỏi disable-admission-plugins"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--disable-admission-plugins=.*ServiceAccount'
+   state: absent
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.13 – NamespaceLifecycle không được bị disable
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.13 – Xóa NamespaceLifecycle khỏi disable-admission-plugins"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--disable-admission-plugins=.*NamespaceLifecycle'
+   state: absent
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.15 – --profiling=false
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.15 – --profiling=false"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--profiling='
+   line: '    - --profiling=false'
+   insertafter: '^\s*- kube-apiserver'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.16 – --audit-log-path
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.16 – --audit-log-path"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--audit-log-path='
+   line: '    - --audit-log-path={{ audit_log_dir }}/audit.log'
+   insertafter: '^\s*- kube-apiserver'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.17 – --audit-log-maxage=30
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.17 – --audit-log-maxage=30"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--audit-log-maxage='
+   line: '    - --audit-log-maxage=30'
+   insertafter: '^\s*- kube-apiserver'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.18 – --audit-log-maxbackup=10
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.18 – --audit-log-maxbackup=10"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--audit-log-maxbackup='
+   line: '    - --audit-log-maxbackup=10'
+   insertafter: '^\s*- kube-apiserver'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.19 – --audit-log-maxsize=100
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.19 – --audit-log-maxsize=100"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--audit-log-maxsize='
+   line: '    - --audit-log-maxsize=100'
+   insertafter: '^\s*- kube-apiserver'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.20 – --request-timeout (đảm bảo không phải 0)
+# Mặc định 60s là PASS, không cần thêm flag nếu chưa có
+# Chỉ xóa nếu ai đặt =0
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.20 – Xóa --request-timeout=0 nếu tồn tại"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--request-timeout=0$'
+   state: absent
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.21 – --service-account-lookup=true
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.21 – --service-account-lookup=true"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--service-account-lookup='
+   line: '    - --service-account-lookup=true'
+   insertafter: '^\s*- kube-apiserver'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.22 – --service-account-key-file
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.22 – --service-account-key-file"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--service-account-key-file='
+   line: '    - --service-account-key-file=/etc/kubernetes/pki/sa.pub'
+   insertafter: '^\s*- kube-apiserver'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.23 – --etcd-certfile và --etcd-keyfile
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.23 – --etcd-certfile"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--etcd-certfile='
+   line: '    - --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt'
+   insertafter: '^\s*- kube-apiserver'
+
+
+- name: "CIS 1.2.23 – --etcd-keyfile"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--etcd-keyfile='
+   line: '    - --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key'
+   insertafter: '^\s*- kube-apiserver'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.24 – --tls-cert-file và --tls-private-key-file
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.24 – --tls-cert-file"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--tls-cert-file='
+   line: '    - --tls-cert-file=/etc/kubernetes/pki/apiserver.crt'
+   insertafter: '^\s*- kube-apiserver'
+
+
+- name: "CIS 1.2.24 – --tls-private-key-file"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--tls-private-key-file='
+   line: '    - --tls-private-key-file=/etc/kubernetes/pki/apiserver.key'
+   insertafter: '^\s*- kube-apiserver'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.25 – --client-ca-file
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.25 – --client-ca-file"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--client-ca-file='
+   line: '    - --client-ca-file=/etc/kubernetes/pki/ca.crt'
+   insertafter: '^\s*- kube-apiserver'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.26 – --etcd-cafile
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.26 – --etcd-cafile"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--etcd-cafile='
+   line: '    - --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt'
+   insertafter: '^\s*- kube-apiserver'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.27 – --encryption-provider-config
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.27 – --encryption-provider-config"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--encryption-provider-config='
+   line: '    - --encryption-provider-config={{ enc_dir }}/encryption-config.yaml'
+   insertafter: '^\s*- kube-apiserver'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.28 – Encryption provider (đảm bảo bằng việc tạo file ở PREP)
+# ══════════════════════════════════════════════════════════════════════
+# Đã xử lý ở PREP: encryption-config.yaml dùng aescbc làm provider đầu tiên
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.29 – --tls-cipher-suites
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.29 – --tls-cipher-suites"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--tls-cipher-suites='
+   line: '    - --tls-cipher-suites=TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305'
+   insertafter: '^\s*- kube-apiserver'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 1.2.30 – --service-account-extend-token-expiration=false
+# ══════════════════════════════════════════════════════════════════════
+- name: "CIS 1.2.30 – --service-account-extend-token-expiration=false"
+ lineinfile:
+   path: "{{ apiserver_manifest }}"
+   regexp: '^\s*-\s*--service-account-extend-token-expiration='
+   line: '    - --service-account-extend-token-expiration=false'
+   insertafter: '^\s*- kube-apiserver'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# YAML lint – Kiểm tra manifest vẫn hợp lệ sau khi sửa
+# ══════════════════════════════════════════════════════════════════════
+- name: "1.2 DONE – YAML lint"
+ command: python3 -c "import yaml; yaml.safe_load(open('{{ apiserver_manifest }}'))"
+ changed_when: false
+
+
+
+

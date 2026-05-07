@@ -1,0 +1,57 @@
+
+
+---
+- name: "CIS 1.3.1 – --terminated-pod-gc-threshold=10"
+  lineinfile:
+    path: "{{ controller_manifest }}"
+    regexp: '^\s*-\s*--terminated-pod-gc-threshold='
+    line: '    - --terminated-pod-gc-threshold=10'
+    insertafter: '^\s*- kube-controller-manager'
+    backup: yes
+
+- name: "CIS 1.3.2 – --profiling=false"
+  lineinfile:
+    path: "{{ controller_manifest }}"
+    regexp: '^\s*-\s*--profiling='
+    line: '    - --profiling=false'
+    insertafter: '^\s*- kube-controller-manager'
+
+- name: "CIS 1.3.3 – --use-service-account-credentials=true"
+  lineinfile:
+    path: "{{ controller_manifest }}"
+    regexp: '^\s*-\s*--use-service-account-credentials='
+    line: '    - --use-service-account-credentials=true'
+    insertafter: '^\s*- kube-controller-manager'
+
+- name: "CIS 1.3.4 – --service-account-private-key-file"
+  lineinfile:
+    path: "{{ controller_manifest }}"
+    regexp: '^\s*-\s*--service-account-private-key-file='
+    line: '    - --service-account-private-key-file=/etc/kubernetes/pki/sa.key'
+    insertafter: '^\s*- kube-controller-manager'
+
+- name: "CIS 1.3.5 – --root-ca-file"
+  lineinfile:
+    path: "{{ controller_manifest }}"
+    regexp: '^\s*-\s*--root-ca-file='
+    line: '    - --root-ca-file=/etc/kubernetes/pki/ca.crt'
+    insertafter: '^\s*- kube-controller-manager'
+
+- name: "CIS 1.3.6 – --feature-gates=RotateKubeletServerCertificate=true"
+  lineinfile:
+    path: "{{ controller_manifest }}"
+    regexp: '^\s*-\s*--feature-gates='
+    line: '    - --feature-gates=RotateKubeletServerCertificate=true'
+    insertafter: '^\s*- kube-controller-manager'
+
+- name: "CIS 1.3.7 – --bind-address=127.0.0.1"
+  lineinfile:
+    path: "{{ controller_manifest }}"
+    regexp: '^\s*-\s*--bind-address='
+    line: '    - --bind-address=127.0.0.1'
+    insertafter: '^\s*- kube-controller-manager'
+
+- name: "1.3 DONE – YAML lint"
+  command: python3 -c "import yaml; yaml.safe_load(open('{{ controller_manifest }}'))"
+  changed_when: false
+

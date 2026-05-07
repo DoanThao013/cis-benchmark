@@ -1,0 +1,21 @@
+---
+- name: CIS Audit
+  hosts: masters
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: Run CIS Audit
+      shell: bash /home/ubuntu/k8s-hardening/audit.sh
+      register: result
+      changed_when: false
+      failed_when: result.rc > 0
+
+    - name: Output
+      debug:
+        msg: "{{ result.stdout_lines }}"
+
+    - name: Fail count
+      debug:
+        msg: "Audit completed with {{ result.rc }} FAIL(s)"
+      when: result.rc > 0
+

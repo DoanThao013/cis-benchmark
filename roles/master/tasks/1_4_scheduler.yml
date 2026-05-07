@@ -1,0 +1,19 @@
+---
+- name: "CIS 1.4.1 – --profiling=false"
+  lineinfile:
+    path: "{{ scheduler_manifest }}"
+    regexp: '^\s*-\s*--profiling='
+    line: '    - --profiling=false'
+    insertafter: '^\s*- kube-scheduler'
+    backup: yes
+
+- name: "CIS 1.4.2 – --bind-address=127.0.0.1"
+  lineinfile:
+    path: "{{ scheduler_manifest }}"
+    regexp: '^\s*-\s*--bind-address='
+    line: '    - --bind-address=127.0.0.1'
+    insertafter: '^\s*- kube-scheduler'
+
+- name: "1.4 DONE – YAML lint"
+  command: python3 -c "import yaml; yaml.safe_load(open('{{ scheduler_manifest }}'))"
+  changed_when: false

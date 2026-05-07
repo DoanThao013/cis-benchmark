@@ -1,0 +1,56 @@
+---
+- name: "CIS 2.1 – --cert-file"
+  lineinfile:
+    path: "{{ etcd_manifest }}"
+    regexp: '^\s*-\s*--cert-file='
+    line: '    - --cert-file=/etc/kubernetes/pki/etcd/server.crt'
+    insertafter: '^\s*- etcd'
+    backup: yes
+
+- name: "CIS 2.1 – --key-file"
+  lineinfile:
+    path: "{{ etcd_manifest }}"
+    regexp: '^\s*-\s*--key-file='
+    line: '    - --key-file=/etc/kubernetes/pki/etcd/server.key'
+    insertafter: '^\s*-\s*--cert-file='
+
+- name: "CIS 2.2 – --client-cert-auth=true"
+  lineinfile:
+    path: "{{ etcd_manifest }}"
+    regexp: '^\s*-\s*--client-cert-auth='
+    line: '    - --client-cert-auth=true'
+    insertafter: '^\s*- etcd'
+
+- name: "CIS 2.3 – Xóa --auto-tls=true nếu tồn tại"
+  lineinfile:
+    path: "{{ etcd_manifest }}"
+    regexp: '^\s*-\s*--auto-tls=true'
+    state: absent
+
+- name: "CIS 2.4/2.5/2.6 – N/A single etcd node"
+  debug:
+    msg: "2.4/2.5/2.6: N/A – single etcd node, no peer communication"
+
+- name: "CIS 2.7 – --trusted-ca-file etcd CA riêng"
+  lineinfile:
+    path: "{{ etcd_manifest }}"
+    regexp: '^\s*-\s*--trusted-ca-file='
+    line: '    - --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt'
+    insertafter: '^\s*- etcd'
+
+- name: "CIS 2.7 – Verify etcd CA khác K8s CA"
+  shell: |
+    diff /etc/kubernetes/pki/etcd/ca.crt /etc/kubernetes/pki/ca.crt > /dev/null 2>&1
+  register: ca_diff
+  changed_when: false
+  failed_when: ca_diff.rc == 0
+
+- name: "CIS 2.7 – Cảnh báo nếu CA giống nhau"
+  debug:
+    msg: "WARNING: etcd CA và K8s CA giống nhau! Cần tạo CA riêng cho etcd."
+  when: ca_diff.rc == 0
+
+- name: "2 DONE – YAML lint"
+  command: python3 -c "import yaml; yaml.safe_load(open('{{ etcd_manifest }}'))"
+  changed_when: false
+

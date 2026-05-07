@@ -1,0 +1,204 @@
+
+PLAY [CIS Kubernetes Benchmark – Master Node Remediation] **********************
+
+TASK [Gathering Facts] *********************************************************
+ok: [master]
+
+TASK [Tạo thư mục backup với timestamp] ****************************************
+changed: [master]
+
+TASK [Backup kube-apiserver manifest] ******************************************
+changed: [master]
+
+TASK [Backup kube-controller-manager manifest] *********************************
+changed: [master]
+
+TASK [Backup kube-scheduler manifest] ******************************************
+changed: [master]
+
+TASK [Backup etcd manifest] ****************************************************
+changed: [master]
+
+TASK [Log đường dẫn backup] ****************************************************
+ok: [master] => {
+    "msg": "Backup lưu tại: /home/ubuntu/system_manifests_backups/2026-04-20_0219"
+}
+
+TASK [1.2 PREP – Tạo thư mục audit log] ****************************************
+ok: [master]
+
+TASK [1.2 PREP – Tạo thư mục admission config] *********************************
+ok: [master]
+
+TASK [1.2 PREP – Tạo thư mục encryption config] ********************************
+ok: [master]
+
+TASK [1.2 PREP – Tạo EventRateLimit admission config] **************************
+ok: [master]
+
+TASK [1.2 PREP – Check encryption config đã tồn tại chưa] **********************
+ok: [master]
+
+TASK [1.2 PREP – Tạo encryption key ngẫu nhiên] ********************************
+skipping: [master]
+
+TASK [1.2 PREP – Tạo EncryptionConfiguration với aescbc] ***********************
+skipping: [master]
+
+TASK [CIS 1.2.1 – --anonymous-auth=false] **************************************
+ok: [master]
+
+TASK [CIS 1.2.2 – Xóa --token-auth-file nếu tồn tại] ***************************
+ok: [master]
+
+TASK [CIS 1.2.3/9/10/11/14 – Set --enable-admission-plugins đầy đủ] ************
+ok: [master]
+
+TASK [CIS 1.2.9 – --admission-control-config-file] *****************************
+ok: [master]
+
+TASK [CIS 1.2.12/13 – Xóa --disable-admission-plugins nếu tồn tại] *************
+ok: [master]
+
+TASK [CIS 1.2.4 – --kubelet-client-certificate] ********************************
+ok: [master]
+
+TASK [CIS 1.2.4 – --kubelet-client-key] ****************************************
+ok: [master]
+
+TASK [CIS 1.2.5 – --kubelet-certificate-authority] *****************************
+ok: [master]
+
+TASK [CIS 1.2.6/7/8 – --authorization-mode=Node,RBAC] **************************
+ok: [master]
+
+TASK [CIS 1.2.15 – --profiling=false] ******************************************
+ok: [master]
+
+TASK [CIS 1.2.16 – --audit-log-path] *******************************************
+ok: [master]
+
+TASK [CIS 1.2.17 – --audit-log-maxage=30] **************************************
+ok: [master]
+
+TASK [CIS 1.2.18 – --audit-log-maxbackup=10] ***********************************
+ok: [master]
+
+TASK [CIS 1.2.19 – --audit-log-maxsize=100] ************************************
+ok: [master]
+
+TASK [CIS 1.2.22 – --service-account-key-file] *********************************
+ok: [master]
+
+TASK [CIS 1.2.23 – --etcd-certfile] ********************************************
+ok: [master]
+
+TASK [CIS 1.2.23 – --etcd-keyfile] *********************************************
+ok: [master]
+
+TASK [CIS 1.2.24 – --tls-cert-file] ********************************************
+ok: [master]
+
+TASK [CIS 1.2.24 – --tls-private-key-file] *************************************
+ok: [master]
+
+TASK [CIS 1.2.25 – --client-ca-file] *******************************************
+ok: [master]
+
+TASK [CIS 1.2.26 – --etcd-cafile] **********************************************
+ok: [master]
+
+TASK [CIS 1.2.27/28 – --encryption-provider-config] ****************************
+ok: [master]
+
+TASK [CIS 1.2.29 – --tls-cipher-suites] ****************************************
+ok: [master]
+
+TASK [CIS 1.2.30 – --service-account-extend-token-expiration=false] ************
+ok: [master]
+
+TASK [1.2 DONE – YAML lint apiserver manifest] *********************************
+ok: [master]
+
+TASK [CIS 1.3.1 – --terminated-pod-gc-threshold=10] ****************************
+ok: [master]
+
+TASK [CIS 1.3.2 – --profiling=false] *******************************************
+ok: [master]
+
+TASK [CIS 1.3.3 – --use-service-account-credentials=true] **********************
+ok: [master]
+
+TASK [CIS 1.3.4 – --service-account-private-key-file] **************************
+ok: [master]
+
+TASK [CIS 1.3.5 – --root-ca-file] **********************************************
+ok: [master]
+
+TASK [CIS 1.3.6 – --feature-gates=RotateKubeletServerCertificate=true] *********
+ok: [master]
+
+TASK [CIS 1.3.7 – --bind-address=127.0.0.1] ************************************
+ok: [master]
+
+TASK [1.3 DONE – YAML lint] ****************************************************
+ok: [master]
+
+TASK [CIS 1.4.1 – --profiling=false] *******************************************
+ok: [master]
+
+TASK [CIS 1.4.2 – --bind-address=127.0.0.1] ************************************
+ok: [master]
+
+TASK [1.4 DONE – YAML lint] ****************************************************
+ok: [master]
+
+TASK [CIS 2.1 – --cert-file] ***************************************************
+ok: [master]
+
+TASK [CIS 2.1 – --key-file] ****************************************************
+ok: [master]
+
+TASK [CIS 2.2 – --client-cert-auth=true] ***************************************
+ok: [master]
+
+TASK [CIS 2.3 – Xóa --auto-tls=true nếu tồn tại] *******************************
+ok: [master]
+
+TASK [CIS 2.4/2.5/2.6 – N/A single etcd node] **********************************
+ok: [master] => {
+    "msg": "2.4/2.5/2.6: N/A – single etcd node, no peer communication"
+}
+
+TASK [CIS 2.7 – --trusted-ca-file etcd CA riêng] *******************************
+ok: [master]
+
+TASK [CIS 2.7 – Verify etcd CA khác K8s CA] ************************************
+ok: [master]
+
+TASK [CIS 2.7 – Kết quả CA check] **********************************************
+ok: [master] => {
+    "msg": "PASS – etcd CA khác K8s CA"
+}
+
+TASK [2 DONE – YAML lint etcd] *************************************************
+ok: [master]
+
+TASK [VERIFY – Chờ apiserver sẵn sàng] *****************************************
+ok: [master]
+
+TASK [VERIFY – kubectl get nodes] **********************************************
+changed: [master]
+
+TASK [VERIFY – Kết quả nodes] **************************************************
+ok: [master] => {
+    "msg": [
+        "NAME         STATUS   ROLES           AGE   VERSION",
+        "masternode   Ready    control-plane   10d   v1.29.15",
+        "worker-1     Ready    <none>          10d   v1.29.15"
+    ]
+}
+
+PLAY RECAP *********************************************************************
+master                     : ok=60   changed=6    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+
